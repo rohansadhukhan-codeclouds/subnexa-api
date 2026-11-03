@@ -26,9 +26,8 @@ RUN composer dump-autoload \
     --no-interaction
 
 # -----------------------------------------------------------------------------
-# Stage 2: FrankenPHP (Caddy + PHP 8.3) — production HTTP server for Render
+# Stage 2: FrankenPHP (Caddy + PHP 8.4) — production HTTP server for Render
 # -----------------------------------------------------------------------------
-# PHP 8.4 — matches composer.lock platform (require php ^8.3, lock resolved on 8.4.x)
 FROM dunglas/frankenphp:1-php8.4
 
 ENV APP_ENV=production \
@@ -42,6 +41,23 @@ WORKDIR /app
 # Add MySQL PDO driver (required). Postgres is optional — install when needed:
 #   RUN install-php-extensions pdo_pgsql
 RUN install-php-extensions pdo_mysql
+
+# Render Free (and similar restricted runtimes) reject binaries with file capabilities.
+# Upstream FrankenPHP ships with cap_net_bind_service=ep so low ports work as non-root.
+# On Render we listen on PORT>=10000 as root workers, so strip the capability or
+# exec fails with: "frankenphp: Operation not permitted" (exit 126).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libcap2-bin \
+    && FRANKENPHP_BIN="$(command -v frankenphp)" \
+    && test -x "$FRANKENPHP_BIN" \
+    && if getcap "$FRANKENPHP_BIN" 2>/dev/null | grep -q .; then \
+         setcap -r "$FRANKENPHP_BIN"; \
+       fi \
+    && if getcap "$FRANKENPHP_BIN" 2>/dev/null | grep -q .; then \
+         echo "ERROR: capabilities still present on $FRANKENPHP_BIN" >&2; \
+         exit 1; \
+       fi \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN printf '%s\n' \
     'opcache.enable=1' \

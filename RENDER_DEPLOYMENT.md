@@ -190,6 +190,7 @@ docker compose exec app php artisan db:seed --force
 | 500 after env change with `CACHE_CONFIG=true` | Clear cache: Shell → `php artisan config:clear` then redeploy |
 | Build fails on `composer install` | Ensure `composer.lock` is committed |
 | Connection refused / bad port | Confirm health check uses `/up`; Render sets `PORT` automatically; image defaults to `10000` |
+| `frankenphp: Operation not permitted` (exit 126) | File capability on the binary. The Dockerfile strips `cap_net_bind_service` with `setcap -r`. Redeploy the latest image. |
 | Admin login fails | Reseed with current `ADMIN_*`, confirm `users.is_admin = 1` |
 | Frontend CORS / wrong host | Align `FRONTEND_URL` and Vercel `LARAVEL_API_URL` |
 
