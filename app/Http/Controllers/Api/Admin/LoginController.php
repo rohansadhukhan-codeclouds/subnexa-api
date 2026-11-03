@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AdminJwtService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,6 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
+    public function __construct(private readonly AdminJwtService $jwt)
+    {
+    }
+
     public function __invoke(Request $request): JsonResponse
     {
         $credentials = $request->validate([
@@ -26,9 +31,16 @@ class LoginController extends Controller
             ]);
         }
 
+        $token = $this->jwt->issue($user);
+
         return response()->json([
-            'name' => $user->name,
-            'email' => $user->email,
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'expires_in' => max(1, (int) config('jwt.ttl', 720)) * 60,
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
         ]);
     }
 }

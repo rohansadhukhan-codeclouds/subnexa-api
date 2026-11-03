@@ -66,19 +66,31 @@ The API backs an online pharmacy: medicine catalog, cart/checkout, admin auth, a
 | Method | Path | Role |
 | --- | --- | --- |
 | `GET` | `/api/status` | Health / wiring check |
-| `GET` | `/api/admin` | Admin segment home |
-| `POST` | `/api/admin/login` | Admin email/password login (`is_admin` users only) |
+| `POST` | `/api/admin/login` | Admin email/password login → JWT Bearer (`is_admin` only) |
+| `GET` | `/api/admin` | Admin home (Bearer required) |
+| `GET` | `/api/admin/me` | Current admin profile (Bearer required) |
+| `POST` | `/api/admin/logout` | Stateless logout ack (Bearer required; client discards token) |
 | `GET` | `/api/storefront` | Storefront segment home |
 
 Keep new endpoints under `/api/admin` or `/api/storefront`. Do not mix admin and customer routes.
 
+## Admin JWT auth
+
+- Library: `firebase/php-jwt` (`config/jwt.php`, `App\Services\AdminJwtService`)
+- Middleware alias: `admin.jwt` (`EnsureAdminJwt`) — expects `Authorization: Bearer <token>`
+- Login response shape: `{ token, token_type: "Bearer", expires_in, user: { name, email } }`
+- Env: `JWT_SECRET` (falls back to `APP_KEY`), `JWT_TTL` minutes (default `720`), `JWT_ALGO`, `JWT_ISSUER`
+
 ## Layout
 
 - `routes/api.php` — mounts status + the two segments
-- `routes/api/admin.php` — admin routes
+- `routes/api/admin.php` — admin routes (login public; rest behind `admin.jwt`)
 - `routes/api/storefront.php` — storefront routes
 - `app/Http/Controllers/Api/Admin` and `.../Storefront`
+- `app/Services/AdminJwtService.php` — issue / decode admin JWTs
+- `app/Http/Middleware/EnsureAdminJwt.php` — Bearer validation
 - `config/admin.php` — seeded admin credentials from env
+- `config/jwt.php` — JWT secret / TTL
 - `database/seeders/AdminSeeder.php` — creates the first admin
 - `.env.example` — template; never commit `.env`
 
@@ -110,17 +122,25 @@ php artisan db:seed
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Default seeded admin (from `.env`):
+### Seeded admin credentials (local / default)
 
-- Email: `admin@subnexa.test`
-- Password: `admin123`
+Created by `php artisan db:seed` via `AdminSeeder` + `config/admin.php`:
+
+| Field | Default |
+| --- | --- |
+| Name | `Admin` |
+| Email | `admin@subnexa.test` |
+| Password | `admin123` |
+
+Override with `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` in `.env`, then re-seed. Change these before any shared or production deploy.
 
 `FRONTEND_URL` should be `http://localhost:3000`.
 
 ## Conventions
 
 - Return JSON from API controllers. Validate with Form Requests or `$request->validate()`.
-- Admin login must reject non-admin users (`users.is_admin`).
+- Admin login must reject non-admin users (`users.is_admin`) and return a JWT Bearer token.
+- Protected admin routes use `admin.jwt` middleware — no session cookie auth for the admin API.
 - Prefer migrations + seeders over manual SQL.
 - Do not commit `.env`, `vendor/`, `node_modules/`, or `database/database.sqlite`.
 - CORS / frontend origin: `FRONTEND_URL`.
