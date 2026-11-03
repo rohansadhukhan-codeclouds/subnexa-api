@@ -81,6 +81,18 @@ Keep new endpoints under `/api/admin` or `/api/storefront`. Do not mix admin and
 - `database/seeders/AdminSeeder.php` — creates the first admin
 - `.env.example` — template; never commit `.env`
 
+## Docker / Render
+
+Production packaging lives at the repo root:
+
+- `Dockerfile` — multi-stage Composer + FrankenPHP (PHP 8.4), listens on `PORT` (default `10000`)
+- `docker/entrypoint.sh` — storage perms, optional `CACHE_CONFIG` / `RUN_MIGRATIONS`
+- `docker/Caddyfile` — serves `public/`
+- `.env.render.example` — Render env template (`LOG_CHANNEL=stderr`, `QUEUE_CONNECTION=sync`)
+- `RENDER_DEPLOYMENT.md` — Free-tier deploy steps
+
+Do not bake `.env` into the image. Do not auto-seed on boot. Prefer external MySQL; avoid SQLite on Render.
+
 ## Local setup
 
 ```bash

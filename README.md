@@ -55,6 +55,19 @@ Seeded admin:
 
 Set `FRONTEND_URL=http://localhost:3000` so the web app can call this API.
 
+## Docker / Render
+
+Production image and Free-tier Render instructions:
+
+- `Dockerfile` — multi-stage PHP 8.4 + FrankenPHP
+- `docker-compose.yml` — local app + MySQL smoke test
+- `.env.render.example` — env template for Render
+- [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) — full deploy guide
+
+```bash
+docker build -t subnexa-api:local .
+```
+
 ## Related repo
 
 - Web: [subnexa-web](https://github.com/rohansadhukhan-codeclouds/subnexa-web)
