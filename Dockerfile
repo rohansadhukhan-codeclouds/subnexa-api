@@ -38,9 +38,16 @@ ENV APP_ENV=production \
 WORKDIR /app
 
 # FrankenPHP already ships mbstring/opcache/curl/PDO/mysqlnd.
-# Add MySQL PDO driver (required). Postgres is optional — install when needed:
-#   RUN install-php-extensions pdo_pgsql
-RUN install-php-extensions pdo_mysql
+# Local/dev: MySQL. Production (Neon): PostgreSQL.
+# Prefer HTTPS apt mirrors — some networks block/forbid plain HTTP to deb.debian.org.
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+      sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+    fi; \
+    if [ -f /etc/apt/sources.list ]; then \
+      sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list; \
+    fi; \
+    install-php-extensions pdo_mysql pdo_pgsql
 
 # Render Free (and similar restricted runtimes) reject binaries with file capabilities.
 # Upstream FrankenPHP ships with cap_net_bind_service=ep so low ports work as non-root.

@@ -56,8 +56,9 @@ The API backs an online pharmacy: medicine catalog, cart/checkout, admin auth, a
 
 ## Stack
 
-- Laravel 13, PHP 8.3+
-- MySQL database `subnexa` (local XAMPP is fine)
+- Laravel 13, PHP 8.4 (Docker / production)
+- Local database: MySQL `subnexa` (XAMPP)
+- Production database: Neon PostgreSQL (`DB_CONNECTION=pgsql`, `DB_SSLMODE=require`)
 - JSON API only — no Blade storefront
 
 ## API map
@@ -91,7 +92,7 @@ Production packaging lives at the repo root:
 - `.env.render.example` — Render env template (`LOG_CHANNEL=stderr`, `QUEUE_CONNECTION=sync`)
 - `RENDER_DEPLOYMENT.md` — Free-tier deploy steps
 
-Do not bake `.env` into the image. Do not auto-seed on boot. Prefer external MySQL; avoid SQLite on Render.
+Do not bake `.env` into the image. Do not auto-seed on boot. Production uses Neon Postgres; local stays MySQL. Avoid SQLite on Render. Leave `DB_URL` unset when using discrete Neon `DB_*` fields.
 
 ## Local setup
 

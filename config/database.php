@@ -86,6 +86,8 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
+            // Leave DB_URL empty when using discrete DB_* fields below.
+            // A stale MySQL DB_URL will override host/database and break Neon.
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
@@ -96,7 +98,11 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            // Neon requires TLS. Local Postgres without SSL can use prefer/disable.
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Neon URI often sets channel_binding=require (SCRAM). Forwarded by
+            // App\Database\Connectors\PostgresConnector when libpq supports it.
+            'channel_binding' => env('DB_CHANNEL_BINDING'),
         ],
 
         'sqlsrv' => [

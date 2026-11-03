@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class StatusController extends Controller
@@ -36,11 +37,11 @@ class StatusController extends Controller
         $config = config("database.connections.{$name}");
         $config = is_array($config) ? $config : [];
 
+        // Do not expose host, database name, or credentials publicly.
         $report = [
             'name' => $name,
             'driver' => $config['driver'] ?? null,
-            'host' => $config['host'] ?? null,
-            'database' => $config['database'] ?? null,
+            'status' => 'disconnected',
         ];
 
         try {
@@ -49,8 +50,13 @@ class StatusController extends Controller
             DB::select('select 1 as ok');
             $report['status'] = 'connected';
             $report['latency_ms'] = round((microtime(true) - $started) * 1000, 2);
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             $report['status'] = 'disconnected';
+            Log::warning('Database health check failed.', [
+                'connection' => $name,
+                'driver' => $config['driver'] ?? null,
+                'message' => $exception->getMessage(),
+            ]);
         }
 
         return $report;
